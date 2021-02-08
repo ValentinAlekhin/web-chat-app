@@ -27,6 +27,7 @@ app.use(cors())
 app.use(router)
 
 io.on('connection', socket => {
+  console.log('Connected', socket.id)
   socket.on('join', ({ name, room }, cb) => {
     const { error, user } = addUser({ id: socket.id, name, room })
 
@@ -53,7 +54,15 @@ io.on('connection', socket => {
     cb()
   })
 
-  socket.on('disconnect', () => console.log('User had left'))
+  socket.on('disconnected', () => {
+    const user = removeUser(socket.id)
+    if (user) {
+      io.to(user.room).emit('message', {
+        user: 'admin',
+        text: `${user.name} has left`,
+      })
+    }
+  })
 })
 
 server.listen(PORT, () => console.log(`Server has started on port ${PORT}`))
